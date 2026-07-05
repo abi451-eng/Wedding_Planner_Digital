@@ -144,6 +144,12 @@
     border:1.5px dashed var(--line-strong);color:var(--purple);font-weight:600;font-size:13px;
     display:flex;align-items:center;justify-content:center;gap:8px;background:#fff}
   .row-add:active{background:var(--bg-2)}
+  .share-btn{margin-top:10px;width:100%;padding:13px;border-radius:var(--r-sm);border:none;
+    background:linear-gradient(135deg,var(--purple),var(--purple-2));color:#fff;font-weight:700;
+    font-size:14px;font-family:inherit;box-shadow:0 6px 16px rgba(108,79,163,.3);cursor:pointer}
+  .share-btn:active{transform:scale(.99);opacity:.95}
+  .share-preview{width:100%;border-radius:14px;box-shadow:var(--shadow);margin-top:6px;display:block}
+  .share-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5}
 
   /* Savings pots */
   .pot{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:16px 16px 18px;margin-top:14px}
@@ -333,6 +339,7 @@
     <div class="sec-title serif">Pos Tabungan <small id="pot-count"></small></div>
     <div id="pot-list"></div>
     <button class="row-add" style="margin-top:14px" onclick="openPot()">＋ Tambah Pos Tabungan</button>
+    <button class="share-btn" onclick="openShare()">🖼️ Bagikan Progres ke Pasangan</button>
     <div style="height:8px"></div>
   </section>
 </main>
@@ -359,7 +366,7 @@
    DATA
 ========================================================= */
 const KEY='wpDB_v1';
-const APP_VERSION='1.1.0';
+const APP_VERSION='1.2.0';
 
 const ICONS=['💒','🍽️','👗','💐','📸','🎉','🎁','📦','💍','🚗','💌','🕌'];
 const POT_ICONS=['💍','🏠','🎉','💐','✈️','💰'];
@@ -791,6 +798,215 @@ function switchView(v){
     b.classList.toggle('active',b.dataset.view===v));
   document.getElementById('fab').style.display = v==='saving'?'grid':'none';
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* =========================================================
+   BAGIKAN PROGRES — kartu bunga (SVG → PNG tajam)
+========================================================= */
+let shareMsg = 'Semangat ya sayang, kita pasti bisa 💜';
+
+function openShare(){
+  const pots=DB.pots;
+  const totalColl=pots.reduce((s,p)=>s+p.deposits.reduce((a,d)=>a+d.amount,0),0);
+  if(totalColl<=0 && pots.length===0){ toast('Belum ada data buat dibagikan'); return; }
+  openSheet(`
+    <h3>Bagikan Progres</h3>
+    <div class="sub">Buat kartu cantik buat dikirim ke pasangan</div>
+    <div class="field">
+      <label>Pesan Manis (bisa diubah)</label>
+      <textarea id="share-msg" rows="2" style="resize:none">${escapeHtml(shareMsg)}</textarea>
+    </div>
+    <button class="btn" onclick="genShare()">✨ Buat Kartu</button>
+    <div id="share-out"></div>
+    <div class="share-hint" id="share-hint"></div>
+  `);
+}
+
+// —— gambar bunga (vektor) ——
+function rose(cx,cy,R,c1,c2,c3){
+  let p='';
+  for(let a=0;a<360;a+=72) p+=`<ellipse cx="${cx}" cy="${cy-R*0.55}" rx="${R*0.42}" ry="${R*0.62}" fill="${c1}" transform="rotate(${a} ${cx} ${cy})"/>`;
+  for(let a=36;a<360;a+=72) p+=`<ellipse cx="${cx}" cy="${cy-R*0.36}" rx="${R*0.3}" ry="${R*0.44}" fill="${c2}" transform="rotate(${a} ${cx} ${cy})"/>`;
+  p+=`<circle cx="${cx}" cy="${cy}" r="${R*0.34}" fill="${c3}"/>`;
+  return p;
+}
+function leaf(cx,cy,len,w,ang,col){
+  return `<g transform="translate(${cx} ${cy}) rotate(${ang})">
+    <path d="M0 0 Q ${w} ${-len*0.5} 0 ${-len} Q ${-w} ${-len*0.5} 0 0 Z" fill="${col}"/>
+    <path d="M0 -3 L0 ${-len+6}" stroke="rgba(255,255,255,.45)" stroke-width="2"/></g>`;
+}
+function floralCluster(){
+  // koordinat di kotak ~0..320 (sudut kiri-atas)
+  let g='';
+  // daun dulu (di belakang)
+  g+=leaf(150,150,120,34,25,'#9DBE96');
+  g+=leaf(120,120,100,28,-40,'#8FB588');
+  g+=leaf(230,120,92,26,60,'#A7C79F');
+  g+=leaf(120,235,88,24,110,'#8FB588');
+  g+=leaf(60,150,80,22,-15,'#A7C79F');
+  // kuncup kecil
+  g+=`<circle cx="255" cy="70" r="13" fill="#C9B6E4"/><circle cx="70" cy="255" r="12" fill="#D5C4EC"/>`;
+  g+=`<circle cx="300" cy="150" r="9" fill="#E0D2F2"/><circle cx="150" cy="300" r="9" fill="#E0D2F2"/>`;
+  // mawar
+  g+=rose(95,95,70,'#9E7AC6','#B896D8','#F0E4FA');
+  g+=rose(195,70,46,'#8B6DB6','#A98FCC','#EADFF6');
+  g+=rose(70,195,42,'#B48FD0','#C9B6E4','#F4ECFB');
+  return g;
+}
+
+function buildCardSVG(){
+  const W=1080,H=1500;
+  const pots=DB.pots.slice();
+  const totalColl=pots.reduce((s,p)=>s+p.deposits.reduce((a,d)=>a+d.amount,0),0);
+  const totalTarget=pots.reduce((s,p)=>s+p.target,0);
+  const pct=totalTarget>0?Math.min(totalColl/totalTarget*100,100):0;
+
+  // kontribusi per orang
+  const by={};
+  pots.forEach(p=>p.deposits.forEach(d=>{const k=d.by||'Saya';by[k]=(by[k]||0)+d.amount;}));
+
+  const today=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const fmt=n=>'Rp'+Math.round(n||0).toLocaleString('id-ID');
+
+  // donut
+  const dcx=540,dcy=470,dr=150,sw=42;
+  const C=2*Math.PI*dr;
+  const off=C*(1-pct/100);
+
+  // pos (maks 3 biar muat rapi)
+  const showPots=pots.slice(0,3);
+  let potY=730;
+  let potSVG='';
+  showPots.forEach(p=>{
+    const coll=p.deposits.reduce((a,d)=>a+d.amount,0);
+    const pp=p.target>0?Math.min(coll/p.target*100,100):0;
+    const barX=90,barW=900,barY=potY+54,barH=20;
+    potSVG+=`
+      <text x="90" y="${potY+20}" font-family="'Playfair Display',Georgia,serif" font-size="34" font-weight="700" fill="#3A2E5C">${escapeHtml(p.name)}</text>
+      <text x="990" y="${potY+20}" text-anchor="end" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#6C4FA3">${fmt(coll)}</text>
+      <rect x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="10" fill="#EADFF6"/>
+      <rect x="${barX}" y="${barY}" width="${Math.max(barW*pp/100, pp>0?barH:0)}" height="${barH}" rx="10" fill="#8B6DB6"/>
+      <text x="990" y="${barY+barH+34}" text-anchor="end" font-family="Georgia,serif" font-size="24" fill="#8A7CA8">${p.target>0?Math.round(pp)+'% dari '+fmt(p.target):fmt(coll)+' terkumpul'}</text>`;
+    potY+=150;
+  });
+
+  // baris kontribusi
+  let contribSVG='';
+  const entries=Object.entries(by);
+  if(entries.length){
+    let cy=potY+20;
+    contribSVG+=`<line x1="90" y1="${cy-30}" x2="990" y2="${cy-30}" stroke="#E7DBF4" stroke-width="2"/>`;
+    entries.forEach(([k,v])=>{
+      contribSVG+=`<text x="90" y="${cy+26}" font-family="Georgia,serif" font-size="30" fill="#5A4B7A">${escapeHtml(k)}</text>
+      <text x="990" y="${cy+26}" text-anchor="end" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#3A2E5C">${fmt(v)}</text>`;
+      cy+=52;
+    });
+    potY=cy;
+  }
+
+  const msg=escapeHtml(shareMsg||'');
+  const fc=floralCluster();
+  const msgY=Math.min(potY+104,H-96);
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#F6EFFA"/><stop offset="1" stop-color="#ECE1F7"/>
+      </linearGradient>
+      <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#6C4FA3"/><stop offset="1" stop-color="#A98FCC"/>
+      </linearGradient>
+    </defs>
+    <rect width="${W}" height="${H}" fill="url(#bg)"/>
+    <rect x="40" y="40" width="${W-80}" height="${H-80}" rx="40" fill="#FFFDFB"/>
+    <rect x="62" y="62" width="${W-124}" height="${H-124}" rx="30" fill="none" stroke="#D9C8EE" stroke-width="2.5"/>
+
+    <!-- bunga di 4 sudut -->
+    <g opacity="0.96">
+      <g transform="translate(26,26) scale(0.8)">${fc}</g>
+      <g transform="translate(${W-26},26) scale(-0.8,0.8)">${fc}</g>
+      <g transform="translate(26,${H-26}) scale(0.8,-0.8)">${fc}</g>
+      <g transform="translate(${W-26},${H-26}) scale(-0.8,-0.8)">${fc}</g>
+    </g>
+
+    <!-- judul -->
+    <text x="540" y="205" text-anchor="middle" font-family="Georgia,serif" font-size="40" fill="#8B6DB6">&#9825;</text>
+    <text x="540" y="270" text-anchor="middle" font-family="'Playfair Display',Georgia,serif" font-size="54" font-weight="800" letter-spacing="2" fill="#3A2E5C">WEDDING FUND</text>
+    <text x="540" y="315" text-anchor="middle" font-family="Georgia,serif" font-size="28" fill="#8A7CA8" font-style="italic">Progres Tabungan Kita &#8226; ${today}</text>
+
+    <!-- donut -->
+    <circle cx="${dcx}" cy="${dcy}" r="${dr}" fill="none" stroke="#EADFF6" stroke-width="${sw}"/>
+    <circle cx="${dcx}" cy="${dcy}" r="${dr}" fill="none" stroke="url(#ring)" stroke-width="${sw}" stroke-linecap="round"
+      stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 ${dcx} ${dcy})"/>
+    <text x="${dcx}" y="${dcy-6}" text-anchor="middle" font-family="'Playfair Display',Georgia,serif" font-size="82" font-weight="800" fill="#6C4FA3">${Math.round(pct)}%</text>
+    <text x="${dcx}" y="${dcy+44}" text-anchor="middle" font-family="Georgia,serif" font-size="28" fill="#8A7CA8" letter-spacing="1">Terkumpul</text>
+    <text x="${dcx}" y="${dcy+210}" text-anchor="middle" font-family="Georgia,serif" font-size="38" font-weight="700" fill="#3A2E5C">${fmt(totalColl)}${totalTarget>0?' <tspan fill="#8A7CA8" font-weight="400">/ '+fmt(totalTarget)+'</tspan>':''}</text>
+
+    ${potSVG}
+    ${contribSVG}
+
+    <!-- pesan -->
+    ${msg?`<rect x="120" y="${msgY-44}" width="840" height="68" rx="20" fill="#FFFFFF" opacity="0.8"/>
+    <text x="540" y="${msgY}" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="34" fill="#7A5EA8">${msg}</text>`:''}
+  </svg>`;
+}
+
+async function genShare(){
+  const ta=document.getElementById('share-msg');
+  if(ta) shareMsg=ta.value;
+  const out=document.getElementById('share-out');
+  const hint=document.getElementById('share-hint');
+  out.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px">Membuat kartu…</div>';
+
+  try{
+    const svg=buildCardSVG();
+    const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    const img=new Image();
+    img.decoding='sync';
+    await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;});
+
+    // render resolusi tinggi (nol blur)
+    const scale=2;
+    const cv=document.createElement('canvas');
+    cv.width=1080*scale; cv.height=1500*scale;
+    const ctx=cv.getContext('2d');
+    ctx.setTransform(scale,0,0,scale,0,0);
+    ctx.drawImage(img,0,0,1080,1500);
+
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png',1));
+    const pngUrl=URL.createObjectURL(blob);
+    lastShareBlob=blob;
+
+    out.innerHTML=`<img src="${pngUrl}" class="share-preview" alt="kartu"/>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn" onclick="doShare()">📤 Bagikan</button>
+        <button class="btn ghost" onclick="doSaveImg()">⬇️ Simpan</button>
+      </div>`;
+    hint.textContent='Pratinjau di atas = hasil aslinya (tajam). Tekan Bagikan buat kirim ke WhatsApp.';
+  }catch(e){
+    out.innerHTML='<div style="text-align:center;color:var(--danger);padding:16px">Gagal membuat kartu. Coba lagi ya.</div>';
+  }
+}
+
+let lastShareBlob=null;
+async function doShare(){
+  if(!lastShareBlob) return;
+  const file=new File([lastShareBlob],'wedding-fund.png',{type:'image/png'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],text:shareMsg}); }
+    catch(e){}
+  }else{
+    doSaveImg();
+    toast('HP ini belum dukung share langsung — gambar disimpan, kirim manual ya');
+  }
+}
+function doSaveImg(){
+  if(!lastShareBlob) return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(lastShareBlob);
+  a.download='wedding-fund-'+new Date().toISOString().slice(0,10)+'.png';
+  a.click();
+  toast('Gambar tersimpan ⬇️');
 }
 
 /* =========================================================
