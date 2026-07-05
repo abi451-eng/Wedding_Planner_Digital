@@ -375,7 +375,7 @@
    DATA
 ========================================================= */
 const KEY='wpDB_v1';
-const APP_VERSION='1.3.0';
+const APP_VERSION='1.3.1';
 
 const ICONS=['💒','🍽️','👗','💐','📸','🎉','🎁','📦','💍','🚗','💌','🕌'];
 const POT_ICONS=['💍','🏠','🎉','💐','✈️','💰'];
@@ -829,14 +829,21 @@ function switchView(v){
    BAGIKAN PROGRES — kartu bunga (SVG → PNG tajam)
 ========================================================= */
 let shareMsg = 'Semangat ya sayang, kita pasti bisa 💜';
+let shareSel = null; // Set berisi id pos yang dipilih untuk dibagikan
 
 function openShare(){
   const pots=DB.pots;
-  const totalColl=pots.reduce((s,p)=>s+p.deposits.reduce((a,d)=>a+d.amount,0),0);
-  if(totalColl<=0 && pots.length===0){ toast('Belum ada data buat dibagikan'); return; }
+  if(!pots.length){ toast('Belum ada pos buat dibagikan'); return; }
+  shareSel=new Set(pots.map(p=>p.id)); // default semua terpilih
   openSheet(`
     <h3>Bagikan Progres</h3>
-    <div class="sub">Buat kartu cantik buat dikirim ke pasangan</div>
+    <div class="sub">Pilih pos yang mau dibagikan, lalu buat kartunya</div>
+    <div class="field">
+      <label>Pos yang ditampilkan (min. 1)</label>
+      <div class="chips" id="share-pots">
+        ${pots.map(p=>`<button type="button" class="chip active" data-pid="${p.id}" onclick="toggleSharePot(this)">${p.ico||'💰'} ${escapeHtml(p.name)}</button>`).join('')}
+      </div>
+    </div>
     <div class="field">
       <label>Pesan Manis (bisa diubah)</label>
       <textarea id="share-msg" rows="2" style="resize:none">${escapeHtml(shareMsg)}</textarea>
@@ -845,6 +852,11 @@ function openShare(){
     <div id="share-out"></div>
     <div class="share-hint" id="share-hint"></div>
   `);
+}
+function toggleSharePot(el){
+  el.classList.toggle('active');
+  const box=document.getElementById('share-pots');
+  if(!box.querySelector('.chip.active')){ el.classList.add('active'); toast('Minimal 1 pos ya'); }
 }
 
 // —— gambar bunga (vektor) ——
@@ -881,7 +893,7 @@ function floralCluster(){
 
 function buildCardSVG(){
   const W=1080,H=1500;
-  const pots=DB.pots.slice();
+  const pots=DB.pots.filter(p=> shareSel ? shareSel.has(p.id) : true);
   const totalColl=pots.reduce((s,p)=>s+p.deposits.reduce((a,d)=>a+d.amount,0),0);
   const totalTarget=pots.reduce((s,p)=>s+p.target,0);
   const pct=totalTarget>0?Math.min(totalColl/totalTarget*100,100):0;
@@ -979,6 +991,10 @@ function buildCardSVG(){
 async function genShare(){
   const ta=document.getElementById('share-msg');
   if(ta) shareMsg=ta.value;
+  // ambil pos yang dipilih dari chip
+  const chips=[...document.querySelectorAll('#share-pots .chip.active')];
+  if(!chips.length){ toast('Pilih minimal 1 pos ya'); return; }
+  shareSel=new Set(chips.map(c=>c.dataset.pid));
   const out=document.getElementById('share-out');
   const hint=document.getElementById('share-hint');
   out.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px">Membuat kartu…</div>';
