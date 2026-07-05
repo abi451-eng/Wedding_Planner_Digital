@@ -161,6 +161,15 @@
   .pot-amt{margin-top:12px;display:flex;justify-content:space-between;align-items:flex-end}
   .pot-amt .big{font-weight:700;font-size:18px;color:var(--purple)}
   .pot-amt .tgt{font-size:12px;color:var(--muted)}
+  .pot-body{display:flex;align-items:center;gap:16px;margin-top:14px}
+  .pot-donut{flex:none}
+  .pot-notarget{width:78px;height:78px;flex:none;display:grid;place-items:center;text-align:center;
+    font-size:11px;line-height:1.25;font-weight:600;color:var(--muted);
+    border:2px dashed var(--line-strong);border-radius:50%}
+  .pot-side{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0}
+  .ps-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+  .ps-row span{color:var(--muted);flex:none}
+  .ps-row b{font-weight:700;font-size:14px;color:var(--ink);text-align:right}
   .bar{height:12px;border-radius:20px;background:var(--bg-2);margin-top:10px;overflow:hidden}
   .bar > i{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,var(--purple),var(--purple-soft));transition:width .5s cubic-bezier(.2,.8,.2,1)}
   .pot-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px}
@@ -366,7 +375,7 @@
    DATA
 ========================================================= */
 const KEY='wpDB_v1';
-const APP_VERSION='1.2.1';
+const APP_VERSION='1.3.0';
 
 const ICONS=['💒','🍽️','👗','💐','📸','🎉','🎁','📦','💍','🚗','💌','🕌'];
 const POT_ICONS=['💍','🏠','🎉','💐','✈️','💰'];
@@ -478,6 +487,17 @@ function renderBudget(){
 /* =========================================================
    RENDER — SAVINGS
 ========================================================= */
+const POT_COLORS=['#8B6DB6','#A98FCC','#C88BB0','#9488D0','#8FB0D6','#B57FC9'];
+function svgDonut(pct,color){
+  const r=42,C=2*Math.PI*r,off=C*(1-Math.min(pct,100)/100);
+  return `<svg class="pot-donut" viewBox="0 0 100 100" width="78" height="78">
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--bg-2)" stroke-width="13"/>
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="13" stroke-linecap="round"
+      stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 50 50)"/>
+    <text x="50" y="55" text-anchor="middle" font-size="23" font-weight="800" fill="${color}" font-family="Inter,sans-serif">${Math.round(pct)}%</text>
+  </svg>`;
+}
+
 function renderSaving(){
   const pots=DB.pots;
   let tTarget=0,tColl=0;
@@ -486,30 +506,35 @@ function renderSaving(){
   if(!pots.length){
     list.innerHTML=`<div class="card empty"><span class="ico">🎯</span>Belum ada pos tabungan.<br>Buat pos pertamamu untuk mulai menabung.</div>`;
   }
-  pots.forEach(p=>{
+  pots.forEach((p,idx)=>{
     const coll=p.deposits.reduce((s,d)=>s+d.amount,0);
     tTarget+=p.target;tColl+=coll;
     const prog=Math.min(pctOf(coll,p.target),100);
+    const color=POT_COLORS[idx % POT_COLORS.length];
     const el=document.createElement('div');
     el.className='pot';
     el.innerHTML=`
       <div class="pot-head">
         <div>
-          <div class="pot-name"><span class="pot-ico" style="background:var(--lilac-soft)">${p.ico||'💰'}</span>${escapeHtml(p.name)}</div>
+          <div class="pot-name"><span class="pot-ico" style="background:${color}22">${p.ico||'💰'}</span>${escapeHtml(p.name)}</div>
           ${p.note?`<div class="pot-note">${escapeHtml(p.note)}</div>`:''}
         </div>
         <button class="pot-edit" onclick="openPot('${p.id}')">✎</button>
       </div>
-      <div class="pot-amt">
-        <div class="big">${rp(coll)}</div>
-        <div class="tgt">/ ${p.target?rp(p.target):'target belum diset'}</div>
+      <div class="pot-body">
+        ${p.target>0 ? svgDonut(prog,color) : `<div class="pot-notarget">Belum<br>ada<br>target</div>`}
+        <div class="pot-side">
+          <div class="ps-row"><span>Terkumpul</span><b style="color:${color}">${rp(coll)}</b></div>
+          ${p.target>0?`
+          <div class="ps-row"><span>Target</span><b>${rp(p.target)}</b></div>
+          <div class="ps-row"><span>Kurang</span><b style="color:var(--purple)">${coll>=p.target?'Tercapai ✓':rp(p.target-coll)}</b></div>`:''}
+        </div>
       </div>
-      <div class="bar"><i style="width:${p.target?prog:0}%"></i></div>
+      <div class="bar"><i style="width:${p.target?prog:0}%;background:linear-gradient(90deg,${color},${color}AA)"></i></div>
       <div class="pot-foot">
-        <span class="pot-pct">${p.target?Math.round(prog)+'% tercapai':rp(coll)+' terkumpul'}</span>
-        <div class="pot-actions">
+        <div class="pot-actions" style="margin-left:auto">
           <button class="mini-btn" onclick="openHistory('${p.id}')">Riwayat</button>
-          <button class="mini-btn primary" onclick="openDeposit('${p.id}')">＋ Setor</button>
+          <button class="mini-btn primary" style="background:${color}" onclick="openDeposit('${p.id}')">＋ Setor</button>
         </div>
       </div>`;
     list.appendChild(el);
