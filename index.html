@@ -366,7 +366,7 @@
    DATA
 ========================================================= */
 const KEY='wpDB_v1';
-const APP_VERSION='1.2.0';
+const APP_VERSION='1.2.1';
 
 const ICONS=['💒','🍽️','👗','💐','📸','🎉','🎁','📦','💍','🚗','💌','🕌'];
 const POT_ICONS=['💍','🏠','🎉','💐','✈️','💰'];
@@ -865,48 +865,48 @@ function buildCardSVG(){
   const by={};
   pots.forEach(p=>p.deposits.forEach(d=>{const k=d.by||'Saya';by[k]=(by[k]||0)+d.amount;}));
 
-  const today=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const today='Saat Ini';
   const fmt=n=>'Rp'+Math.round(n||0).toLocaleString('id-ID');
 
   // donut
-  const dcx=540,dcy=470,dr=150,sw=42;
+  const dcx=540,dcy=520,dr=150,sw=42;
   const C=2*Math.PI*dr;
   const off=C*(1-pct/100);
 
   // pos (maks 3 biar muat rapi)
   const showPots=pots.slice(0,3);
-  let potY=730;
+  let potY=772;
   let potSVG='';
   showPots.forEach(p=>{
     const coll=p.deposits.reduce((a,d)=>a+d.amount,0);
     const pp=p.target>0?Math.min(coll/p.target*100,100):0;
-    const barX=90,barW=900,barY=potY+54,barH=20;
+    const barX=90,barW=900,barY=potY+48,barH=20;
     potSVG+=`
-      <text x="90" y="${potY+20}" font-family="'Playfair Display',Georgia,serif" font-size="34" font-weight="700" fill="#3A2E5C">${escapeHtml(p.name)}</text>
-      <text x="990" y="${potY+20}" text-anchor="end" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#6C4FA3">${fmt(coll)}</text>
+      <text x="90" y="${potY+18}" font-family="'Playfair Display',Georgia,serif" font-size="34" font-weight="700" fill="#3A2E5C">${escapeHtml(p.name)}</text>
+      <text x="990" y="${potY+18}" text-anchor="end" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#6C4FA3">${fmt(coll)}</text>
       <rect x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="10" fill="#EADFF6"/>
       <rect x="${barX}" y="${barY}" width="${Math.max(barW*pp/100, pp>0?barH:0)}" height="${barH}" rx="10" fill="#8B6DB6"/>
-      <text x="990" y="${barY+barH+34}" text-anchor="end" font-family="Georgia,serif" font-size="24" fill="#8A7CA8">${p.target>0?Math.round(pp)+'% dari '+fmt(p.target):fmt(coll)+' terkumpul'}</text>`;
-    potY+=150;
+      <text x="990" y="${barY+barH+30}" text-anchor="end" font-family="Georgia,serif" font-size="24" fill="#8A7CA8">${p.target>0?Math.round(pp)+'% dari '+fmt(p.target):fmt(coll)+' terkumpul'}</text>`;
+    potY+=118;
   });
 
   // baris kontribusi
   let contribSVG='';
   const entries=Object.entries(by);
   if(entries.length){
-    let cy=potY+20;
+    let cy=potY+14;
     contribSVG+=`<line x1="90" y1="${cy-30}" x2="990" y2="${cy-30}" stroke="#E7DBF4" stroke-width="2"/>`;
     entries.forEach(([k,v])=>{
       contribSVG+=`<text x="90" y="${cy+26}" font-family="Georgia,serif" font-size="30" fill="#5A4B7A">${escapeHtml(k)}</text>
       <text x="990" y="${cy+26}" text-anchor="end" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#3A2E5C">${fmt(v)}</text>`;
-      cy+=52;
+      cy+=46;
     });
     potY=cy;
   }
 
   const msg=escapeHtml(shareMsg||'');
   const fc=floralCluster();
-  const msgY=Math.min(potY+104,H-96);
+  const msgY=Math.min(potY+82,H-84);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     <defs>
@@ -940,7 +940,7 @@ function buildCardSVG(){
       stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 ${dcx} ${dcy})"/>
     <text x="${dcx}" y="${dcy-6}" text-anchor="middle" font-family="'Playfair Display',Georgia,serif" font-size="82" font-weight="800" fill="#6C4FA3">${Math.round(pct)}%</text>
     <text x="${dcx}" y="${dcy+44}" text-anchor="middle" font-family="Georgia,serif" font-size="28" fill="#8A7CA8" letter-spacing="1">Terkumpul</text>
-    <text x="${dcx}" y="${dcy+210}" text-anchor="middle" font-family="Georgia,serif" font-size="38" font-weight="700" fill="#3A2E5C">${fmt(totalColl)}${totalTarget>0?' <tspan fill="#8A7CA8" font-weight="400">/ '+fmt(totalTarget)+'</tspan>':''}</text>
+    <text x="${dcx}" y="${dcy+212}" text-anchor="middle" font-family="Georgia,serif" font-size="38" font-weight="700" fill="#3A2E5C">${fmt(totalColl)}${totalTarget>0?' <tspan fill="#8A7CA8" font-weight="400">/ '+fmt(totalTarget)+'</tspan>':''}</text>
 
     ${potSVG}
     ${contribSVG}
