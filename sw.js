@@ -1,7 +1,7 @@
 /* Wedding Fund — Service Worker
    Naikkan nomor versi (v1 -> v2 -> ...) tiap kali kamu update index.html,
    supaya cache lama otomatis dibersihkan di HP. */
-const CACHE = 'wedding-fund-v5';
+const CACHE = 'wedding-fund-v6';
 
 // File inti yang di-cache saat install (app tetap jalan tanpa internet)
 const SHELL = [
@@ -37,18 +37,35 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
 
+  // Halaman HTML -> NETWORK-FIRST: selalu ambil versi terbaru saat online,
+  // jadi tiap deploy baru langsung kelihatan (nggak nyangkut cache lama).
+  const isHTML = req.mode === 'navigate' ||
+    (req.headers.get('accept') || '').includes('text/html');
+  if (isHTML) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match(req).then((r) => r || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Aset lain (Chart.js, font, ikon) -> stale-while-revalidate: cepat + offline.
   e.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req)
         .then((res) => {
-          // cache respons yang valid ATAU opaque (font/CDN lintas domain)
           if (res && (res.ok || res.type === 'opaque')) {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
           }
           return res;
         })
-        .catch(() => cached); // offline & tidak ada di cache -> pakai apa adanya
+        .catch(() => cached);
       return cached || network;
     })
   );
