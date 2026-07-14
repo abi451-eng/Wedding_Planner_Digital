@@ -1,16 +1,18 @@
 /* Wedding Fund — Service Worker
    Naikkan nomor versi (v1 -> v2 -> ...) tiap kali kamu update index.html,
    supaya cache lama otomatis dibersihkan di HP. */
-const CACHE = 'wedding-fund-v6';
+const CACHE = 'wedding-fund-v7';
 
 // File inti yang di-cache saat install (app tetap jalan tanpa internet)
 const SHELL = [
   './',
   './index.html',
+  './db.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
 // Install: simpan app shell

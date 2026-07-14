@@ -273,9 +273,83 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   @media(min-width:600px){ .brand{font-size:40px} }
+
+  /* ---------- Gate: login & household ---------- */
+  .gate{position:fixed;inset:0;z-index:200;display:none;place-items:center;padding:20px;
+    background:radial-gradient(800px 500px at 20% 0%, #F3E8FA 0%, #EDE3F8 45%, #E6DBF4 100%)}
+  .gate.show{display:grid}
+  .gate-card{background:#fff;border-radius:26px;box-shadow:0 20px 50px rgba(70,45,120,.22);
+    padding:30px 24px;max-width:400px;width:100%;text-align:center;border:1px solid var(--line)}
+  .gate-emblem{width:60px;height:60px;border-radius:50%;margin:0 auto 16px;
+    background:linear-gradient(135deg,var(--purple),var(--purple-soft));color:#fff;
+    display:grid;place-items:center;font-size:26px;box-shadow:0 8px 20px rgba(108,79,163,.35)}
+  .gate h2{font-family:'Playfair Display',serif;font-size:25px;margin-bottom:6px}
+  .gate p{font-size:13px;color:var(--muted);margin:0 0 20px;line-height:1.5}
+  .gate-loading{color:var(--muted);font-size:14px;padding:20px}
+  .g-btn{width:100%;padding:14px;border-radius:14px;font-weight:700;font-size:15px;
+    font-family:inherit;border:none;cursor:pointer;margin-top:10px;
+    display:flex;align-items:center;justify-content:center;gap:10px}
+  .g-btn.google{background:#fff;color:#3c4043;border:1.5px solid var(--line-strong);box-shadow:var(--shadow-sm)}
+  .g-btn.primary{background:var(--purple);color:#fff}
+  .g-btn.ghost{background:var(--bg-2);color:var(--purple)}
+  .g-btn:active{transform:scale(.99)}
+  .gate input{width:100%;padding:13px 14px;border:1.5px solid var(--line-strong);border-radius:12px;
+    font-size:15px;font-family:inherit;text-align:center;outline:none;margin-top:8px}
+  .gate input:focus{border-color:var(--purple)}
+  .gate input.code{text-transform:uppercase;letter-spacing:5px;font-weight:700;font-size:22px}
+  .gate .divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-size:12px}
+  .gate .divider::before,.gate .divider::after{content:'';flex:1;height:1px;background:var(--line)}
+  .gate .err{color:var(--danger);font-size:12px;margin-top:10px;min-height:16px}
+  .gate .who{font-size:12px;color:var(--muted);margin-top:16px}
+  .gate .who a{color:var(--purple);cursor:pointer;text-decoration:underline}
+
+  /* kode undangan */
+  .invite-code{font-size:30px;font-weight:800;letter-spacing:7px;color:var(--purple);
+    background:var(--bg-2);border-radius:14px;padding:16px;margin:12px 0;font-family:'Inter'}
+
+  /* ---------- Privasi ---------- */
+  .privacy-box{background:var(--bg-2);border-radius:14px;padding:4px 14px;margin-bottom:14px}
+  .pv-title{font-size:12px;font-weight:700;color:var(--purple);padding:11px 0 4px}
+  .pv-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
+  .pv-row b{font-size:13px;display:block}
+  .pv-row small{font-size:11px;color:var(--muted);display:block;margin-top:2px;line-height:1.35}
+  .pv-row input[type=checkbox]{width:44px;height:26px;flex:none;appearance:none;background:var(--line-strong);
+    border-radius:20px;position:relative;cursor:pointer;transition:.2s}
+  .pv-row input[type=checkbox]::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;
+    border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .pv-row input[type=checkbox]:checked{background:var(--purple)}
+  .pv-row input[type=checkbox]:checked::after{transform:translateX(18px)}
+  .pv-badge{font-size:9px;font-weight:700;background:var(--lilac-soft);color:var(--purple);
+    padding:2px 7px;border-radius:8px;margin-left:6px;vertical-align:2px;white-space:nowrap}
+
+  /* pos yang angkanya disembunyikan */
+  .pot-hidden{display:flex;align-items:center;gap:14px;margin-top:14px;padding:16px;
+    background:var(--bg-2);border-radius:14px;color:var(--muted)}
+  .pot-hidden .ph-ico{font-size:26px}
+  .pot-hidden div{font-size:13px;font-weight:600;color:var(--ink)}
+  .pot-hidden small{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:2px}
+  .hist-lock{font-size:14px;padding:6px 8px;opacity:.5}
+
+  /* ---------- Status sync ---------- */
+  .sync-bar{position:fixed;top:0;left:0;right:0;z-index:150;text-align:center;
+    font-size:11px;font-weight:600;padding:6px;color:#fff;display:none}
+  .sync-bar.show{display:block}
+  .sync-bar.offline{background:var(--amber)}
+  .sync-bar.pending{background:var(--purple)}
 </style>
 </head>
 <body>
+
+<!-- ===== Overlay: Login / Household ===== -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-emblem">♥</div>
+    <div id="gate-body">
+      <div class="gate-loading">Memuat…</div>
+    </div>
+  </div>
+</div>
 
 <header>
   <div class="emblem">♥</div>
@@ -370,42 +444,25 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./db.js"></script>
 <script>
 /* =========================================================
-   DATA
+   DATA — sekarang bersumber dari Supabase (lewat db.js),
+   dengan localStorage sebagai cache offline.
+   `DB` di bawah ini menunjuk ke WF.DB, sehingga SELURUH kode
+   render (chart, donut, kartu) di bawah tidak perlu diubah.
 ========================================================= */
-const KEY='wpDB_v1';
-const APP_VERSION='1.3.2';
+const APP_VERSION='2.0.0';
 
 const ICONS=['💒','🍽️','👗','💐','📸','🎉','🎁','📦','💍','🚗','💌','🕌'];
 const POT_ICONS=['💍','🏠','🎉','💐','✈️','💰'];
 
-const DEFAULT_DB={
-  version:APP_VERSION,
-  categories:[
-    {id:id(),name:'Venue & Akad',    ico:'💒', plan:0, actual:0},
-    {id:id(),name:'Catering',        ico:'🍽️', plan:0, actual:0},
-    {id:id(),name:'Busana & Rias',   ico:'👗', plan:0, actual:0},
-    {id:id(),name:'Dekorasi & Bunga',ico:'💐', plan:0, actual:0},
-    {id:id(),name:'Foto & Video',    ico:'📸', plan:0, actual:0},
-    {id:id(),name:'Mahar',           ico:'💍', plan:0, actual:0},
-    {id:id(),name:'Seserahan',       ico:'🎁', plan:0, actual:0},
-    {id:id(),name:'Lain-lain',       ico:'📦', plan:0, actual:0},
-  ],
-  pots:[
-    {id:id(),name:'Dana Acara',ico:'💍',note:'Mahar, seserahan & resepsi kecil',target:0,deposits:[]},
-    {id:id(),name:'Dana Awal Rumah Tangga',ico:'🏠',note:'Dikumpulkan bersama nanti',target:0,deposits:[]},
-  ]
-};
+let DB = window.WF.DB;   // { categories:[], pots:[], user, household, ... }
 
-function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
-let DB=load();
-
-function load(){
-  try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}
-  return structuredClone(DEFAULT_DB);
-}
-function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
+/* Fungsi kompatibilitas: dulu menyimpan ke localStorage.
+   Sekarang penyimpanan diurus db.js, jadi ini tidak melakukan apa-apa. */
+function save(){}
 
 /* =========================================================
    HELPERS
@@ -507,36 +564,48 @@ function renderSaving(){
     list.innerHTML=`<div class="card empty"><span class="ico">🎯</span>Belum ada pos tabungan.<br>Buat pos pertamamu untuk mulai menabung.</div>`;
   }
   pots.forEach((p,idx)=>{
-    const coll=p.deposits.reduce((s,d)=>s+d.amount,0);
-    tTarget+=p.target;tColl+=coll;
-    const prog=Math.min(pctOf(coll,p.target),100);
+    // Pos yang angkanya disembunyikan (dilihat oleh pasangan) -> collected/target = null
+    const hidden = p.can_view_amount === false;
+    const coll = hidden ? 0 : (p.deposits||[]).reduce((s,d)=>s+d.amount,0);
+    const target = hidden ? 0 : (p.target||0);
+    if(!hidden){ tTarget+=target; tColl+=coll; }
+    const prog=Math.min(pctOf(coll,target),100);
     const color=POT_COLORS[idx % POT_COLORS.length];
+    const mine = !p.owner_id || p.owner_id===DB.user?.id;
     const el=document.createElement('div');
     el.className='pot';
     el.innerHTML=`
       <div class="pot-head">
         <div>
-          <div class="pot-name"><span class="pot-ico" style="background:${color}22">${p.ico||'💰'}</span>${escapeHtml(p.name)}</div>
+          <div class="pot-name"><span class="pot-ico" style="background:${color}22">${p.ico||'💰'}</span>${escapeHtml(p.name)}
+            ${p.is_private?'<span class="pv-badge">🔒 Pribadi</span>':''}
+            ${(!p.is_private && p.show_amount===false && mine)?'<span class="pv-badge">🙈 Angka disembunyikan</span>':''}
+          </div>
           ${p.note?`<div class="pot-note">${escapeHtml(p.note)}</div>`:''}
         </div>
-        <button class="pot-edit" onclick="openPot('${p.id}')">✎</button>
+        ${mine?`<button class="pot-edit" onclick="openPot('${p.id}')">✎</button>`:''}
       </div>
+      ${hidden ? `
+      <div class="pot-hidden">
+        <span class="ph-ico">🙈</span>
+        <div>Nominal disembunyikan<small>Pasanganmu belum membagikan angka pos ini</small></div>
+      </div>` : `
       <div class="pot-body">
-        ${p.target>0 ? svgDonut(prog,color) : `<div class="pot-notarget">Belum<br>ada<br>target</div>`}
+        ${target>0 ? svgDonut(prog,color) : `<div class="pot-notarget">Belum<br>ada<br>target</div>`}
         <div class="pot-side">
           <div class="ps-row"><span>Terkumpul</span><b style="color:${color}">${rp(coll)}</b></div>
-          ${p.target>0?`
-          <div class="ps-row"><span>Target</span><b>${rp(p.target)}</b></div>
-          <div class="ps-row"><span>Kurang</span><b style="color:var(--purple)">${coll>=p.target?'Tercapai ✓':rp(p.target-coll)}</b></div>`:''}
+          ${target>0?`
+          <div class="ps-row"><span>Target</span><b>${rp(target)}</b></div>
+          <div class="ps-row"><span>Kurang</span><b style="color:var(--purple)">${coll>=target?'Tercapai ✓':rp(target-coll)}</b></div>`:''}
         </div>
       </div>
-      <div class="bar"><i style="width:${p.target?prog:0}%;background:linear-gradient(90deg,${color},${color}AA)"></i></div>
+      <div class="bar"><i style="width:${target?prog:0}%;background:linear-gradient(90deg,${color},${color}AA)"></i></div>
       <div class="pot-foot">
         <div class="pot-actions" style="margin-left:auto">
           <button class="mini-btn" onclick="openHistory('${p.id}')">Riwayat</button>
           <button class="mini-btn primary" style="background:${color}" onclick="openDeposit('${p.id}')">＋ Setor</button>
         </div>
-      </div>`;
+      </div>`}`;
     list.appendChild(el);
   });
   const left=Math.max(tTarget-tColl,0);
@@ -592,20 +661,24 @@ function openCat(catId){
   attachThousand(document.getElementById('f-actual'));
   setupChips('ico-chips');
 }
-function saveCat(catId){
+async function saveCat(catId){
   const name=document.getElementById('f-name').value.trim();
   if(!name){toast('Nama kategori wajib diisi');return;}
   const ico=activeChip('ico-chips')||'📦';
   const plan=parseNum(document.getElementById('f-plan').value);
   const actual=parseNum(document.getElementById('f-actual').value);
-  if(catId){const c=DB.categories.find(x=>x.id===catId);Object.assign(c,{name,ico,plan,actual});}
-  else DB.categories.push({id:id(),name,ico,plan,actual});
-  renderAll();closeSheet();toast(catId?'Kategori diperbarui':'Kategori ditambahkan');
+  try{
+    if(catId) await WF.updateCategory(catId,{name,ico,plan,actual});
+    else      await WF.addCategory({name,ico,plan,actual});
+    renderAll();closeSheet();toast(catId?'Kategori diperbarui':'Kategori ditambahkan');
+  }catch(e){ toast('Gagal: '+e.message); }
 }
-function delCat(catId){
+async function delCat(catId){
   if(!confirm('Hapus kategori ini?'))return;
-  DB.categories=DB.categories.filter(x=>x.id!==catId);
-  renderAll();closeSheet();toast('Kategori dihapus');
+  try{
+    await WF.deleteCategory(catId);
+    renderAll();closeSheet();toast('Kategori dihapus');
+  }catch(e){ toast('Gagal: '+e.message); }
 }
 
 /* ---- Pos Tabungan ---- */
@@ -631,26 +704,61 @@ function openPot(potId){
       <label>Catatan <span style="font-weight:400">(opsional)</span></label>
       <input id="p-note" value="${isEdit?escapeAttr(p.note||''):''}" placeholder="mis. mahar + seserahan">
     </div>
+
+    <div class="privacy-box">
+      <div class="pv-title">🔒 Privasi Pos</div>
+      <label class="pv-row">
+        <div>
+          <b>Pos Pribadi</b>
+          <small>Pasangan tidak melihat pos ini sama sekali</small>
+        </div>
+        <input type="checkbox" id="p-private" ${isEdit&&p.is_private?'checked':''} onchange="syncPrivacyUI()">
+      </label>
+      <label class="pv-row" id="pv-show-row">
+        <div>
+          <b>Angka boleh dilihat pasangan</b>
+          <small>Kalau dimatikan: pos tetap terlihat, tapi nominalnya disembunyikan</small>
+        </div>
+        <input type="checkbox" id="p-show" ${!isEdit||p.show_amount!==false?'checked':''}>
+      </label>
+    </div>
+
     <button class="btn" onclick="savePot('${potId||''}')">Simpan</button>
     ${isEdit?`<button class="btn danger-ghost" style="margin-top:10px" onclick="delPot('${p.id}')">Hapus Pos</button>`:''}
   `);
   attachThousand(document.getElementById('p-target'));
   setupChips('pico-chips');
+  syncPrivacyUI();
 }
-function savePot(potId){
+/* Kalau pos ditandai PRIVAT, opsi "angka boleh dilihat" jadi tidak relevan
+   (pasangan tidak melihat pos-nya sama sekali) -> disamarkan. */
+function syncPrivacyUI(){
+  const priv=document.getElementById('p-private');
+  const row=document.getElementById('pv-show-row');
+  if(!priv||!row)return;
+  row.style.opacity = priv.checked ? .4 : 1;
+  row.style.pointerEvents = priv.checked ? 'none' : 'auto';
+}
+async function savePot(potId){
   const name=document.getElementById('p-name').value.trim();
   if(!name){toast('Nama pos wajib diisi');return;}
   const ico=activeChip('pico-chips')||'💰';
   const target=parseNum(document.getElementById('p-target').value);
   const note=document.getElementById('p-note').value.trim();
-  if(potId){const p=DB.pots.find(x=>x.id===potId);Object.assign(p,{name,ico,target,note});}
-  else DB.pots.push({id:id(),name,ico,target,note,deposits:[]});
-  renderAll();closeSheet();toast(potId?'Pos diperbarui':'Pos ditambahkan');
+  const is_private=document.getElementById('p-private').checked;
+  const show_amount=document.getElementById('p-show').checked;
+  try{
+    if(potId) await WF.updatePot(potId,{name,ico,target,note,is_private,show_amount});
+    else      await WF.addPot({name,ico,target,note,is_private,show_amount});
+    renderAll();closeSheet();toast(potId?'Pos diperbarui':'Pos ditambahkan');
+  }catch(e){ toast('Gagal: '+e.message); }
 }
-function delPot(potId){
+async function delPot(potId){
   if(!confirm('Hapus pos ini beserta seluruh riwayat setorannya?'))return;
-  DB.pots=DB.pots.filter(x=>x.id!==potId);
-  renderAll();closeSheet();toast('Pos dihapus');
+  try{
+    await WF.deletePot(potId);
+    renderAll();closeSheet();toast('Pos dihapus');
+  }catch(e){ toast('Gagal: '+e.message); }
 }
 
 /* ---- Setoran ---- */
@@ -687,14 +795,15 @@ function openDeposit(potId){
   attachThousand(document.getElementById('d-amt'));
   setupChips('by-chips',(v)=>depBy=v);
 }
-function saveDeposit(potId){
+async function saveDeposit(potId){
   const amt=parseNum(document.getElementById('d-amt').value);
   if(amt<=0){toast('Isi jumlah setoran dulu');return;}
   const date=document.getElementById('d-date').value||new Date().toISOString().slice(0,10);
   const note=document.getElementById('d-note').value.trim();
-  const p=DB.pots.find(x=>x.id===potId);
-  p.deposits.push({id:id(),amount:amt,by:depBy,date,note});
-  renderAll();closeSheet();toast('＋ '+rp(amt)+' masuk 🎉');
+  try{
+    await WF.addDeposit(potId,{amount:amt,by_label:depBy,note,date});
+    renderAll();closeSheet();toast('＋ '+rp(amt)+' masuk 🎉');
+  }catch(e){ toast('Gagal: '+e.message); }
 }
 
 /* ---- Setoran cepat (FAB) ---- */
@@ -725,66 +834,71 @@ function openHistory(potId){
     <h3>Riwayat — ${escapeHtml(p.name)}</h3>
     <div class="sub">Total terkumpul: <b style="color:var(--emerald)">${rp(coll)}</b> · ${deps.length} setoran</div>
     <div class="hist">
-      ${deps.length?deps.map(d=>`
+      ${deps.length?deps.map(d=>{
+        const mine = !d.created_by || d.created_by===DB.user?.id;
+        return `
         <div class="hist-item">
           <div class="hist-l">
-            <div class="a">${rp(d.amount)}<span class="hist-by">${escapeHtml(d.by||'Saya')}</span></div>
+            <div class="a">${rp(d.amount)}<span class="hist-by">${escapeHtml(d.by_label||d.by||'Saya')}</span></div>
             <div class="m">${fmtDate(d.date)}${d.note?' · '+escapeHtml(d.note):''}</div>
           </div>
-          <button class="hist-del" onclick="delDeposit('${potId}','${d.id}')">Hapus</button>
-        </div>`).join(''):'<div class="empty">Belum ada setoran.</div>'}
+          ${mine
+            ? `<button class="hist-del" onclick="delDeposit('${potId}','${d.id}')">Hapus</button>`
+            : `<span class="hist-lock" title="Dicatat pasanganmu">🔒</span>`}
+        </div>`;}).join(''):'<div class="empty">Belum ada setoran.</div>'}
     </div>
     <button class="btn ghost" style="margin-top:16px" onclick="openDeposit('${potId}')">＋ Setor Lagi</button>
   `);
 }
-function delDeposit(potId,depId){
-  const p=DB.pots.find(x=>x.id===potId);
-  p.deposits=p.deposits.filter(d=>d.id!==depId);
-  renderAll();openHistory(potId);toast('Setoran dihapus');
+async function delDeposit(potId,depId){
+  try{
+    await WF.deleteDeposit(potId,depId);
+    renderAll();openHistory(potId);toast('Setoran dihapus');
+  }catch(e){ toast(e.message); }
 }
 
 /* ---- Settings ---- */
 function openSettings(){
+  const hh=DB.household;
+  const u=DB.user;
   openSheet(`
     <h3>Menu</h3>
-    <div class="sub">Data tersimpan di HP ini · v${APP_VERSION}</div>
-    <div class="menu-item" onclick="backup()">
-      <span class="mi">💾</span><div>Backup Data<small>Unduh file .json cadangan</small></div>
+    <div class="sub">${hh?escapeHtml(hh.name)+' · '+(hh.member_count||1)+' anggota':'Belum ada rumah tangga'} · v${APP_VERSION}</div>
+
+    <div class="menu-item" onclick="openInvite()">
+      <span class="mi">💌</span><div>Undang Pasangan<small>Bagikan kode: <b>${escapeHtml(hh?.invite_code||'—')}</b></small></div>
     </div>
-    <label class="menu-item" style="cursor:pointer">
-      <span class="mi">📥</span><div>Restore Data<small>Muat dari file backup</small></div>
-      <input type="file" accept=".json" style="display:none" onchange="restore(this)">
-    </label>
-    <div class="menu-item" onclick="resetData()">
-      <span class="mi">🗑️</span><div style="color:var(--danger)">Reset Semua<small>Hapus semua data (tak bisa dibatalkan)</small></div>
+    <div class="menu-item" onclick="doSync()">
+      <span class="mi">🔄</span><div>Sinkronkan Sekarang<small>${WF.DB.pendingCount>0?WF.DB.pendingCount+' perubahan menunggu':'Semua sudah tersimpan'}</small></div>
+    </div>
+    <div class="menu-item" onclick="backup()">
+      <span class="mi">💾</span><div>Backup Data<small>Unduh salinan .json</small></div>
+    </div>
+    <div class="menu-item" onclick="doLogout()">
+      <span class="mi">🚪</span><div style="color:var(--danger)">Keluar<small>${escapeHtml(u?.email||'')}</small></div>
     </div>
     <div class="menu-item" style="opacity:.7">
       <span class="mi">♥</span><div>Wedding Fund<small>Untuk perjalanan menuju hari bahagia</small></div>
     </div>
   `);
 }
+async function doSync(){
+  if(!WF.DB.online){ toast('Sedang offline — nanti otomatis'); return; }
+  toast('Menyinkronkan…');
+  try{
+    await WF.flushQueue();
+    await WF.pull();
+    DB=WF.DB; renderAll(); closeSheet();
+    toast('Tersinkron ✓');
+  }catch(e){ toast('Gagal: '+e.message); }
+}
 function backup(){
-  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const data={household:DB.household,categories:DB.categories,pots:DB.pots};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download='wedding-fund-backup-'+new Date().toISOString().slice(0,10)+'.json';
   a.click();closeSheet();toast('Backup diunduh 💾');
-}
-function restore(input){
-  const file=input.files[0];if(!file)return;
-  const r=new FileReader();
-  r.onload=e=>{
-    try{
-      const d=JSON.parse(e.target.result);
-      if(!d.categories||!d.pots)throw 0;
-      DB=d;renderAll();closeSheet();toast('Data berhasil dipulihkan ✓');
-    }catch(err){toast('File backup tidak valid');}
-  };
-  r.readAsText(file);
-}
-function resetData(){
-  if(!confirm('Yakin hapus SEMUA data? Ini tidak bisa dibatalkan.'))return;
-  DB=structuredClone(DEFAULT_DB);renderAll();closeSheet();toast('Data direset');
 }
 
 /* =========================================================
@@ -893,14 +1007,14 @@ function floralCluster(){
 
 function buildCardSVG(){
   const W=1080,H=1500;
-  const pots=DB.pots.filter(p=> shareSel ? shareSel.has(p.id) : true);
+  const pots=DB.pots.filter(p=> (shareSel ? shareSel.has(p.id) : true) && p.can_view_amount!==false);
   const totalColl=pots.reduce((s,p)=>s+p.deposits.reduce((a,d)=>a+d.amount,0),0);
   const totalTarget=pots.reduce((s,p)=>s+p.target,0);
   const pct=totalTarget>0?Math.min(totalColl/totalTarget*100,100):0;
 
   // kontribusi per orang
   const by={};
-  pots.forEach(p=>p.deposits.forEach(d=>{const k=d.by||'Saya';by[k]=(by[k]||0)+d.amount;}));
+  pots.forEach(p=>(p.deposits||[]).forEach(d=>{const k=d.by_label||d.by||'Saya';by[k]=(by[k]||0)+d.amount;}));
 
   const today='Saat Ini';
   const fmt=n=>'Rp'+Math.round(n||0).toLocaleString('id-ID');
@@ -1051,11 +1165,132 @@ function doSaveImg(){
 }
 
 /* =========================================================
+   GATE — Login Google & Household
+========================================================= */
+const gate=document.getElementById('gate');
+const gateBody=document.getElementById('gate-body');
+function showGate(html){ gateBody.innerHTML=html; gate.classList.add('show'); }
+function hideGate(){ gate.classList.remove('show'); }
+
+function gateLogin(){
+  showGate(`
+    <h2>Wedding Fund</h2>
+    <p>Kelola budget pernikahan & tabungan bersama.<br>Masuk untuk mulai.</p>
+    <button class="g-btn google" onclick="doLogin()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M45 24c0-1.6-.1-2.7-.4-4H24v7.5h12c-.2 2-1.5 5-4.4 7l6.7 5.2C42.2 36 45 30.6 45 24z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.7-5.2c-1.8 1.3-4.3 2.2-7.8 2.2-6 0-11-4-12.8-9.4l-7 5.4C7.8 41 15.3 46 24 46z"/><path fill="#FBBC05" d="M11.2 28.3c-.5-1.4-.8-2.8-.8-4.3s.3-3 .8-4.3l-7-5.4C2.8 17.2 2 20.5 2 24s.8 6.8 2.2 9.7l7-5.4z"/><path fill="#EA4335" d="M24 10.4c3.4 0 5.7 1.5 7 2.7l5.9-5.8C33.3 4 29.2 2 24 2 15.3 2 7.8 7 4.2 14.3l7 5.4C13 14.4 18 10.4 24 10.4z"/></svg>
+      Masuk dengan Google
+    </button>
+    <div class="err" id="gate-err"></div>
+  `);
+}
+
+function gateHousehold(){
+  const nama=DB.user?.name||'Saya';
+  showGate(`
+    <h2>Halo, ${escapeHtml(nama.split(' ')[0])} 👋</h2>
+    <p>Buat rumah tangga baru, atau gabung<br>kalau pasanganmu sudah punya kode.</p>
+    <button class="g-btn primary" onclick="doCreateHH()">🏡 Buat Rumah Tangga Baru</button>
+    <div class="divider">atau</div>
+    <input class="code" id="hh-code" maxlength="6" placeholder="KODE" autocapitalize="characters">
+    <button class="g-btn ghost" onclick="doJoinHH()">🔗 Gabung dengan Kode</button>
+    <div class="err" id="gate-err"></div>
+    <div class="who">Masuk sebagai ${escapeHtml(DB.user?.email||'')} · <a onclick="doLogout()">keluar</a></div>
+  `);
+}
+
+async function doLogin(){
+  try{ await WF.signInGoogle(); }
+  catch(e){ document.getElementById('gate-err').textContent='Gagal masuk: '+e.message; }
+}
+async function doLogout(){
+  await WF.signOut();
+  location.reload();
+}
+async function doCreateHH(){
+  const err=document.getElementById('gate-err');
+  err.textContent='Membuat…';
+  try{
+    await WF.createHousehold('Rumah Tangga Kita', DB.user?.name);
+    hideGate(); renderAll();
+    toast('Rumah tangga dibuat 🏡');
+    setTimeout(openInvite,600);   // langsung tunjukkan kode undangan
+  }catch(e){ err.textContent='Gagal: '+e.message; }
+}
+async function doJoinHH(){
+  const err=document.getElementById('gate-err');
+  const code=document.getElementById('hh-code').value.trim();
+  if(code.length<6){ err.textContent='Kode harus 6 karakter'; return; }
+  err.textContent='Menggabungkan…';
+  try{
+    await WF.joinHousehold(code, DB.user?.name);
+    hideGate(); renderAll();
+    toast('Berhasil gabung 🎉');
+  }catch(e){ err.textContent = e.message.includes('tidak ditemukan')
+      ? 'Kode undangan tidak ditemukan' : 'Gagal: '+e.message; }
+}
+
+/* Kode undangan untuk pasangan */
+function openInvite(){
+  const hh=DB.household;
+  if(!hh){ toast('Belum ada rumah tangga'); return; }
+  openSheet(`
+    <h3>Undang Pasangan</h3>
+    <div class="sub">Kasih kode ini ke pasanganmu. Dia login Google di app ini, lalu masukkan kode.</div>
+    <div class="invite-code">${escapeHtml(hh.invite_code||'—')}</div>
+    <div class="btn-row">
+      <button class="btn" onclick="shareInvite()">📤 Kirim Kode</button>
+      <button class="btn ghost" onclick="copyInvite()">📋 Salin</button>
+    </div>
+    <div class="share-hint">Anggota saat ini: ${hh.member_count||1} orang</div>
+  `);
+}
+function copyInvite(){
+  navigator.clipboard.writeText(DB.household.invite_code).then(()=>toast('Kode disalin 📋'));
+}
+async function shareInvite(){
+  const code=DB.household.invite_code;
+  const txt=`Ini kode buat gabung Wedding Fund kita: ${code}\n\nBuka: ${location.origin}`;
+  if(navigator.share){ try{ await navigator.share({text:txt}); }catch(e){} }
+  else { copyInvite(); }
+}
+
+/* =========================================================
+   STATUS SYNC (offline / antre)
+========================================================= */
+function renderSyncBar(){
+  let bar=document.getElementById('sync-bar');
+  if(!bar){
+    bar=document.createElement('div');
+    bar.id='sync-bar'; bar.className='sync-bar';
+    document.body.appendChild(bar);
+  }
+  const d=WF.DB;
+  if(!d.online){
+    bar.className='sync-bar show offline';
+    bar.textContent='📴 Mode offline — perubahan disimpan, nanti dikirim otomatis';
+  }else if(d.pendingCount>0){
+    bar.className='sync-bar show pending';
+    bar.textContent=`🔄 Menyinkronkan ${d.pendingCount} perubahan…`;
+  }else{
+    bar.className='sync-bar';
+  }
+}
+window.addEventListener('db:status', renderSyncBar);
+window.addEventListener('db:change', ()=>{ DB=WF.DB; renderAll(); });
+
+/* =========================================================
    INIT
 ========================================================= */
 initCharts();
-renderAll();
 switchView('budget');
+
+WF.initDB(()=>{
+  DB = WF.DB;
+  renderSyncBar();
+  if(!DB.user){ gateLogin(); }
+  else if(!DB.household){ gateHousehold(); }
+  else { hideGate(); renderAll(); }
+});
 
 /* Service worker — offline penuh (cache app + Chart.js + font) */
 if('serviceWorker' in navigator){
