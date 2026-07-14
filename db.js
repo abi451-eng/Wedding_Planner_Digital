@@ -15,6 +15,12 @@
               -> kalau gagal/offline -> masuk ANTREAN -> dikirim ulang nanti
    ===================================================================== */
 
+(function () {
+'use strict';
+/* Semua variabel di bawah ini PRIVAT (terbungkus IIFE).
+   Ini mencegah tabrakan nama dengan variabel di index.html
+   — misalnya `DB`, yang sebelumnya bentrok dan bikin SyntaxError. */
+
 const SUPABASE_URL  = 'https://libfjoygcjmtwznvjeav.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_cySKN13Z6qL26MelSyfqrw_aPIOiUQ1';
 
@@ -427,3 +433,5 @@ window.WF = {
   addDeposit, deleteDeposit,
   pull, flushQueue,
 };
+
+})();
