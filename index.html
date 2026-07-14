@@ -453,16 +453,25 @@
    `DB` di bawah ini menunjuk ke WF.DB, sehingga SELURUH kode
    render (chart, donut, kartu) di bawah tidak perlu diubah.
 ========================================================= */
-const APP_VERSION='2.0.0';
+const APP_VERSION='2.0.1';
 
 const ICONS=['💒','🍽️','👗','💐','📸','🎉','🎁','📦','💍','🚗','💌','🕌'];
 const POT_ICONS=['💍','🏠','🎉','💐','✈️','💰'];
 
-let DB = window.WF.DB;   // { categories:[], pots:[], user, household, ... }
+let DB = (window.WF && window.WF.DB) || {categories:[],pots:[],user:null,household:null,online:true,pendingCount:0};
 
 /* Fungsi kompatibilitas: dulu menyimpan ke localStorage.
    Sekarang penyimpanan diurus db.js, jadi ini tidak melakukan apa-apa. */
 function save(){}
+
+/* Penjaga: banyak aksi butuh login + rumah tangga. Kalau belum siap,
+   beri tahu dengan jelas alih-alih error diam-diam. */
+function requireReady(){
+  if(!window.WF){ toast('Aplikasi belum siap dimuat'); return false; }
+  if(!DB.user){ toast('Masuk dulu ya'); gateLogin(); return false; }
+  if(!DB.household){ toast('Buat rumah tangga dulu'); gateHousehold(); return false; }
+  return true;
+}
 
 /* =========================================================
    HELPERS
@@ -633,6 +642,7 @@ function closeSheet(){sheetBg.classList.remove('show');sheet.classList.remove('s
 
 /* ---- Kategori (Budget) ---- */
 function openCat(catId){
+  if(!requireReady())return;
   const c=catId?DB.categories.find(x=>x.id===catId):null;
   const isEdit=!!c;
   openSheet(`
@@ -683,6 +693,7 @@ async function delCat(catId){
 
 /* ---- Pos Tabungan ---- */
 function openPot(potId){
+  if(!requireReady())return;
   const p=potId?DB.pots.find(x=>x.id===potId):null;
   const isEdit=!!p;
   openSheet(`
@@ -764,6 +775,7 @@ async function delPot(potId){
 /* ---- Setoran ---- */
 let depBy='Saya';
 function openDeposit(potId){
+  if(!requireReady())return;
   const p=DB.pots.find(x=>x.id===potId);
   depBy='Saya';
   const today=new Date().toISOString().slice(0,10);
@@ -808,6 +820,7 @@ async function saveDeposit(potId){
 
 /* ---- Setoran cepat (FAB) ---- */
 function quickDeposit(){
+  if(!requireReady())return;
   if(currentView!=='saving'){switchView('saving');}
   if(!DB.pots.length){openPot();return;}
   if(DB.pots.length===1){openDeposit(DB.pots[0].id);return;}
@@ -946,6 +959,7 @@ let shareMsg = 'Semangat ya sayang, kita pasti bisa 💜';
 let shareSel = null; // Set berisi id pos yang dipilih untuk dibagikan
 
 function openShare(){
+  if(!requireReady())return;
   const pots=DB.pots;
   if(!pots.length){ toast('Belum ada pos buat dibagikan'); return; }
   shareSel=new Set(pots.map(p=>p.id)); // default semua terpilih
@@ -1279,17 +1293,52 @@ window.addEventListener('db:status', renderSyncBar);
 window.addEventListener('db:change', ()=>{ DB=WF.DB; renderAll(); });
 
 /* =========================================================
-   INIT
+   INIT — tahan banting.
+   Kalau db.js atau library Supabase gagal dimuat, JANGAN diam:
+   tampilkan pesan yang jelas, bukan layar mati.
 ========================================================= */
+function gateError(judul,pesan){
+  showGate(`
+    <h2>${escapeHtml(judul)}</h2>
+    <p>${pesan}</p>
+    <button class="g-btn primary" onclick="location.reload()">🔄 Muat Ulang</button>
+  `);
+}
+
+/* Tunggu sampai library siap (maks ~8 detik), baru mulai. */
+function tungguSiap(cb){
+  let coba=0;
+  (function cek(){
+    const adaWF = !!window.WF;
+    const adaSB = !!window.supabase;
+    if(adaWF && adaSB) return cb();
+    if(++coba > 40){          // 40 x 200ms = 8 detik
+      if(!adaWF)      gateError('Gagal memuat aplikasi','File <b>db.js</b> tidak ditemukan.<br>Pastikan db.js ikut ter-upload ke hosting, sejajar dengan index.html.');
+      else            gateError('Tidak ada koneksi','Gagal memuat pustaka Supabase.<br>Cek koneksi internetmu, lalu muat ulang.');
+      return;
+    }
+    setTimeout(cek,200);
+  })();
+}
+
 initCharts();
 switchView('budget');
+showGate('<div class="gate-loading">Memuat…</div>');   // tampilkan sesuatu sejak awal
 
-WF.initDB(()=>{
-  DB = WF.DB;
-  renderSyncBar();
-  if(!DB.user){ gateLogin(); }
-  else if(!DB.household){ gateHousehold(); }
-  else { hideGate(); renderAll(); }
+tungguSiap(async ()=>{
+  DB = window.WF.DB;
+  try{
+    await WF.initDB(()=>{
+      DB = WF.DB;
+      renderSyncBar();
+      if(!DB.user)            gateLogin();
+      else if(!DB.household)  gateHousehold();
+      else { hideGate(); renderAll(); }
+    });
+  }catch(e){
+    console.error(e);
+    gateError('Gagal memulai','Terjadi kesalahan saat menghubungkan ke server.<br><small>'+escapeHtml(e.message||'')+'</small>');
+  }
 });
 
 /* Service worker — offline penuh (cache app + Chart.js + font) */

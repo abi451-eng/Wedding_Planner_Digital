@@ -1,7 +1,7 @@
 /* Wedding Fund — Service Worker
    Naikkan nomor versi (v1 -> v2 -> ...) tiap kali kamu update index.html,
    supaya cache lama otomatis dibersihkan di HP. */
-const CACHE = 'wedding-fund-v7';
+const CACHE = 'wedding-fund-v8';
 
 // File inti yang di-cache saat install (app tetap jalan tanpa internet)
 const SHELL = [
